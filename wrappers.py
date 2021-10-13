@@ -8,5 +8,4 @@ def execution_time(f):
         time_finish = time.time()
         print(f"[INFO] Execution time is {round(time_finish - time_start, 3)} sec")
         return result
-
     return wrapper
