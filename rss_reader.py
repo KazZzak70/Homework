@@ -10,5 +10,5 @@ parser.add_argument("--limit", help="Limit news topics if this parameter is prov
 args = parser.parse_args()
 
 if __name__ == "__main__":
-    parser = Parser(url=args.source, stdout_json=args.json, stdout_verbose=args.verbose, limit=args.limit)
-    parser.parse()
+    parser = Parser()
+    parser(url=args.source, stdout_json=args.json, stdout_verbose=args.verbose, limit=args.limit)
