@@ -1,30 +1,31 @@
-import logging as _logging
-import time as _time
-import requests as _requests
+from requests.exceptions import ConnectTimeout, ConnectionError, HTTPError, ReadTimeout
+import functools
+import logging
+import time
 
 
-def execution_time(f):
+def execution_time(func):
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        time_start = _time.time()
-        result = f(*args, **kwargs)
-        time_finish = _time.time()
-        print(f"Total execution time is {round(time_finish - time_start, 3)} sec")
+        start_time = time.monotonic()
+        result = func(*args, **kwargs)
+        print(f"Total execution time is {round(time.monotonic() - start_time, 3)} sec")
         return result
     return wrapper
 
 
-def network_exceptions_catcher(f):
+def network_exceptions_catcher(func):
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
-            response = f(*args, **kwargs)
+            response = func(*args, **kwargs)
             response.raise_for_status()
+        except ConnectTimeout:
+            logging.error(msg="Timed out.")
+        except ConnectionError:
+            logging.error(msg=f"HTTP Connection error, max retries exceeded")
+        except (HTTPError, ReadTimeout) as err:
+            logging.error(msg=f"{err}")
+        else:
             return response
-        except _requests.exceptions.ConnectTimeout:
-            _logging.error(msg="Timed out.")
-        except _requests.exceptions.ConnectionError:
-            _logging.error(msg=f"HTTP Connection error, max retries exceeded")
-        except _requests.exceptions.HTTPError as err:
-            _logging.error(msg=f"{err}")
-        except _requests.exceptions.ReadTimeout as err:
-            _logging.error(msg=f"{err}")
     return wrapper
