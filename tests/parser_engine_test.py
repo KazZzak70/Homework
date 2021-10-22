@@ -1,22 +1,21 @@
 from collections import Iterable
 from parser_engine import Parser
 from bs4 import BeautifulSoup
-from unittest import mock
+from unittest.mock import patch
 from io import StringIO
+from pathlib import Path
 import unittest
 import json
 import io
+FOLDER_PATH = Path(Path.cwd(), "tests", "test_snippets")
 
 
 class TestParser(unittest.TestCase):
-    FILE_SNIPPETS_PATH_LIST = ["/home/maksim/MyProjects/tests/test_snippets/data_1_item.json",
-                               "/home/maksim/MyProjects/tests/test_snippets/data_1_json_mode",
-                               "/home/maksim/MyProjects/tests/test_snippets/data_1_normal_mode",
-                               "/home/maksim/MyProjects/tests/test_snippets/data_25_items.json",
-                               "/home/maksim/MyProjects/tests/test_snippets/data_25_json_mode"]
-
-    ITEMS_PATH_LIST = ['/home/maksim/MyProjects/tests/test_snippets/item_with_enclosure',
-                       '/home/maksim/MyProjects/tests/test_snippets/item_with_media_content']
+    FILE_SNIPPETS_NAMES_LIST = ["data_1_item.json", "data_1_json_mode", "data_1_normal_mode", "data_25_items.json",
+                                "data_25_json_mode"]
+    ITEM_NAMES_LIST = ["item_with_enclosure", "item_with_media_content", "two_items", "two_items_limit_1.json"]
+    FILE_SNIPPETS_PATH_LIST = [Path(FOLDER_PATH, file_name) for file_name in FILE_SNIPPETS_NAMES_LIST]
+    ITEMS_PATH_LIST = [Path(FOLDER_PATH, item_name) for item_name in ITEM_NAMES_LIST]
 
     def setUp(self) -> None:
         self.test_instance = Parser()
@@ -24,7 +23,7 @@ class TestParser(unittest.TestCase):
         self.stdout_verbose_mode = None
         self.stdout_json_mode = None
         self.test_items_list = list()
-        for file_path in TestParser.ITEMS_PATH_LIST:
+        for file_path in TestParser.ITEMS_PATH_LIST[:2]:
             with open(file_path) as src:
                 self.test_items_list.append(BeautifulSoup(src.read(), "xml"))
 
@@ -88,7 +87,7 @@ class TestParser(unittest.TestCase):
         self.assertDictEqual(expected_data, received_data)
         self.assertEqual(cm.output, ['INFO:root:Saving result data file to /home/maksim/MyProjects'])
 
-    @mock.patch("sys.stdout", new_callable=io.StringIO)
+    @patch("sys.stdout", new_callable=io.StringIO)
     def assertEqualStdout(self, src, expected_output, mock_stdout):
         Parser.data_output(src_data=src, verbose_flag=self.stdout_verbose_mode, json_flag=self.stdout_json_mode)
         self.assertEqual(mock_stdout.getvalue(), expected_output)
@@ -123,6 +122,55 @@ class TestParser(unittest.TestCase):
     def test_obj_is_iterable(self):
         self.test_instance.__iter__()
         self.assertIsInstance(self.test_instance, Iterable)
+
+    def test_obj_generator_case_first_item(self):
+        with open(TestParser.ITEMS_PATH_LIST[2]) as src_file:
+            src = src_file.read()
+        self.test_instance.soup = BeautifulSoup(src, "xml")
+        expected_first_item = self.test_instance.soup.find("item")
+        first_item = self.test_instance.__next__()
+        self.assertEqual(first_item, expected_first_item)
+
+    def test_obj_generator_case_middle_item(self):
+        with open(TestParser.ITEMS_PATH_LIST[2]) as src_file:
+            src = src_file.read()
+        self.test_instance.soup = BeautifulSoup(src, "xml")
+        self.test_instance.item = self.test_instance.soup.find("item")
+        expected_item = self.test_instance.soup.find_all("item")[1]
+        item = self.test_instance.__next__()
+        self.assertEqual(item, expected_item)
+
+    def test_obj_generator_case_last_item(self):
+        with open(TestParser.ITEMS_PATH_LIST[2]) as src_file:
+            src = src_file.read()
+        self.test_instance.soup = BeautifulSoup(src, "xml")
+        self.test_instance.item = self.test_instance.soup.find_all("item")[1]
+        with self.assertRaises(StopIteration):
+            self.test_instance.__next__()
+
+    @patch.object(Parser, "get_all_urls")
+    def test_get_content_limit_1(self, mock_get_all_urls):
+        mock_get_all_urls.return_value = [
+            "https://icdn.lenta.ru/images/2021/10/20/16/20211020160507876/pic_6416ef6b1cec76ad10417046923c1cef.jpg"]
+        with open(TestParser.ITEMS_PATH_LIST[3]) as src_file:
+            expected_result_dict = json.load(src_file)
+        with open(TestParser.ITEMS_PATH_LIST[2]) as src_file:
+            src = src_file.read()
+        self.test_instance.soup = BeautifulSoup(src, "xml")
+        received_dict = self.test_instance.get_content(html=src, verbose_flag=False, limit=1)
+        self.assertEqual(received_dict, expected_result_dict)
+        mock_get_all_urls.assert_called_once()
+        self.assertEqual(dict.__name__, received_dict.__class__.__name__)
+
+    @patch.object(Parser, "get_all_urls")
+    def test_get_content_verbose_mode(self, mock_get_all_urls):
+        mock_get_all_urls.return_value = None
+        with open(TestParser.ITEMS_PATH_LIST[2]) as src_file:
+            src = src_file.read()
+        self.test_instance.soup = BeautifulSoup(src, "xml")
+        with self.assertLogs(level="DEBUG") as cm:
+            self.test_instance.get_content(html=src, verbose_flag=True, limit=0)
+        self.assertEqual(cm.output, ["INFO:root:Starting collecting items"])
 
 
 if __name__ == '__main__':

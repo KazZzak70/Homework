@@ -150,14 +150,14 @@ class Parser:
                 "link": item.link.text if item.link is not None else None,
                 "pubdate": item.pubDate.text if item.pubDate is not None else None,
                 "links": {
-                    1: item.link.text if item.link is not None else None
+                    "1": item.link.text if item.link is not None else None
                 }
             }
             url_list = Parser.get_all_urls(item)
             if url_list:
                 for key, url in enumerate(url_list):
-                    new_item['links'][key + 2] = url
-            result_data['items'].append(new_item)
+                    new_item["links"][str(key + 2)] = url
+            result_data["items"].append(new_item)
             if iteration == limit:
                 break
         return result_data
