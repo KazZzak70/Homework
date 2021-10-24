@@ -17,6 +17,7 @@ class Parser:
 
     HEADERS = {'user-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:93.0) Gecko/20100101 Firefox/93.0',
                'accept': '*/*'}
+    OUTPUT_DATA_PATH = pathlib.Path(pathlib.Path.cwd(), "output_data")
     url_pattern = re.compile(r"https?://[a-zA-Z0-9_\-/~\.:]+")
 
     def __init__(self):
@@ -53,7 +54,7 @@ class Parser:
             return self.item
 
     @wrappers.execution_time
-    def __call__(self, *, url: str, stdout_json: bool, stdout_verbose: bool, limit: int):
+    def __call__(self, *, url: str, stdout_json: bool, stdout_verbose: bool, limit: int, date: int):
         """
         This method is an implementation of calling an class instance a function.
 
@@ -65,10 +66,14 @@ class Parser:
         :type stdout_verbose: bool
         :param limit: number of news in the output
         :type limit: int
+        :param date: Sort news for a given date
+        :type date: int
 
         :rtype: object
         """
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG if stdout_verbose else logging.ERROR)
+        if url is None:
+            pass
         html = Parser.get_html(url=url, verbose_flag=stdout_verbose)
         html = html if html is not None else exit()
         if html.status_code == 200:
@@ -221,4 +226,4 @@ if __name__ == "__main__":
     aif_url = "https://aif.ru/rss/politics.php"
     test_url = "http://httpbin.org/delay/10"
     parse = Parser()
-    parse(url=yahoo_url, stdout_json=False, stdout_verbose=True, limit=1)
+    parse(url=aif_url, stdout_json=False, stdout_verbose=True, limit=60, date=0)
