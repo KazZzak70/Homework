@@ -7,6 +7,7 @@ from pathlib import Path
 import unittest
 import json
 import io
+
 FOLDER_PATH = Path(Path.cwd(), "tests", "test_snippets")
 
 
@@ -22,6 +23,7 @@ class TestParser(unittest.TestCase):
         self.maxDiff = None
         self.stdout_verbose_mode = None
         self.stdout_json_mode = None
+        self.stdout_limit = None
         self.test_items_list = list()
         for file_path in TestParser.ITEMS_PATH_LIST[:2]:
             with open(file_path) as src:
@@ -89,7 +91,8 @@ class TestParser(unittest.TestCase):
 
     @patch("sys.stdout", new_callable=io.StringIO)
     def assertEqualStdout(self, src, expected_output, mock_stdout):
-        Parser.data_output(src_data=src, verbose_flag=self.stdout_verbose_mode, json_flag=self.stdout_json_mode)
+        Parser.data_output(src_data=src, verbose_flag=self.stdout_verbose_mode, json_flag=self.stdout_json_mode,
+                           limit=self.stdout_limit)
         self.assertEqual(mock_stdout.getvalue(), expected_output)
 
     def test_data_output_1_item_json_mode(self):
@@ -149,7 +152,7 @@ class TestParser(unittest.TestCase):
             self.test_instance.__next__()
 
     @patch.object(Parser, "get_all_urls")
-    def test_get_content_limit_1(self, mock_get_all_urls):
+    def test_get_content(self, mock_get_all_urls):
         mock_get_all_urls.return_value = [
             "https://icdn.lenta.ru/images/2021/10/20/16/20211020160507876/pic_6416ef6b1cec76ad10417046923c1cef.jpg"]
         with open(TestParser.ITEMS_PATH_LIST[3]) as src_file:
@@ -157,7 +160,7 @@ class TestParser(unittest.TestCase):
         with open(TestParser.ITEMS_PATH_LIST[2]) as src_file:
             src = src_file.read()
         self.test_instance.soup = BeautifulSoup(src, "xml")
-        received_dict = self.test_instance.get_content(html=src, verbose_flag=False, limit=1)
+        received_dict = self.test_instance.get_content(html=src, verbose_flag=False)
         self.assertEqual(received_dict, expected_result_dict)
         mock_get_all_urls.assert_called_once()
         self.assertEqual(dict.__name__, received_dict.__class__.__name__)

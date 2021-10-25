@@ -1,4 +1,4 @@
-from requests.exceptions import ConnectTimeout, ConnectionError, HTTPError, ReadTimeout
+from requests.exceptions import ConnectTimeout, ConnectionError, HTTPError, ReadTimeout, MissingSchema
 import functools
 import logging
 import time
@@ -9,7 +9,7 @@ def execution_time(func):
     def wrapper(*args, **kwargs):
         start_time = time.monotonic()
         result = func(*args, **kwargs)
-        print(f"Total execution time is {round(time.monotonic() - start_time, 3)} sec")
+        print(f"\nTotal execution time is {round(time.monotonic() - start_time, 3)} sec")
         return result
     return wrapper
 
@@ -26,6 +26,8 @@ def network_exceptions_catcher(func):
             logging.error(msg=f"HTTP Connection error, max retries exceeded")
         except (HTTPError, ReadTimeout) as err:
             logging.error(msg=f"{err}")
+        except MissingSchema:
+            logging.error(msg="Invalid URL")
         else:
             return response
     return wrapper

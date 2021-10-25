@@ -1,4 +1,4 @@
-from parser_engine import Parser
+import pathlib
 from pathlib import Path
 from fpdf import FPDF
 from PIL import Image
@@ -6,13 +6,15 @@ import requests
 import json
 import os
 
+HEADERS = {'user-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:93.0) Gecko/20100101 Firefox/93.0',
+           'accept': '*/*'}
 total_page_height = FPDF().h - 20
 
 
 def define_the_mode():
     offline_mode_flag = False
     try:
-        requests.get(url="http://httpbin.org/status/200", headers=Parser.HEADERS)
+        requests.get(url="http://httpbin.org/status/200", headers=HEADERS)
     except requests.ConnectionError:
         offline_mode_flag = True
     return offline_mode_flag
@@ -20,7 +22,7 @@ def define_the_mode():
 
 def get_image(url: str):
     try:
-        response = requests.get(url=url, headers=Parser.HEADERS)
+        response = requests.get(url=url, headers=HEADERS)
     except requests.ConnectionError:
         raise requests.ConnectionError("HTTP Connection error")
     else:
@@ -114,15 +116,19 @@ def item_online_mode(pdf, item: dict, key: int, indent: int):
         pdf.cell(0, 5, ln=1)
         total_page_height = pdf.h
         indent = 15
-    if item["links"]["2"] is not None:
-        image = get_image(item["links"]["2"])
-        with open(f"image{key}.jpg", "wb") as file:
-            file.write(image)
-        im = Image.open(f"image{key}.jpg")
-        im.save(f"image{key}.png")
-        pdf.image(f"image{key}.png", x=10, y=indent, w=30)
-        os.remove(f"image{key}.png")
-        os.remove(f"image{key}.jpg")
+    new_indent = 15 + indent + data_list.__len__() * pdf.font_size
+    try:
+        if item["links"]['2'] is not None:
+            image = get_image(item["links"]["2"])
+            with open(f"image{key}.jpg", "wb") as file:
+                file.write(image)
+            im = Image.open(f"image{key}.jpg")
+            im.save(f"image{key}.png")
+            pdf.image(f"image{key}.png", x=10, y=indent, w=30)
+            os.remove(f"image{key}.png")
+            os.remove(f"image{key}.jpg")
+    except KeyError:
+        pass
     for row in data_list:
         for key, item in enumerate(row):
             if key == 0:
@@ -136,20 +142,24 @@ def item_online_mode(pdf, item: dict, key: int, indent: int):
         pdf.ln(pdf.font_size)
     pdf.cell(0, 15, ln=1)
     total_page_height -= (data_list.__len__() * pdf.font_size + 20)
-    return 15 + indent + data_list.__len__() * pdf.font_size
+    return new_indent
 
 
 def item_offline_mode(pdf, item: dict, indent: int) -> float:
     online_mode = False
     global total_page_height
     data_list = get_data_list(item, online_mode, 60)
-    data_list.extend(
-        link_separator(link=item["links"]["2"], header_name="Image link:", max_line_len=65, online_mode_flag=online_mode))
+    try:
+        data_list.extend(link_separator(link=item["links"]["2"], header_name="Image link:", max_line_len=65,
+                                        online_mode_flag=online_mode))
+    except KeyError:
+        pass
     if data_list.__len__() * pdf.font_size > total_page_height:
         pdf.add_page()
         pdf.cell(0, 5, ln=1)
         total_page_height = pdf.h
         indent = 15
+    new_indent = 15 + indent + data_list.__len__() * pdf.font_size
     for row in data_list:
         for key, item in enumerate(row):
             if key == 0:
@@ -161,11 +171,14 @@ def item_offline_mode(pdf, item: dict, indent: int) -> float:
         pdf.ln(pdf.font_size)
     pdf.cell(0, 15, ln=1)
     total_page_height -= (data_list.__len__() * pdf.font_size + 20)
-    return 15 + indent + data_list.__len__() * pdf.font_size
+    return new_indent
 
 
-def output_data_pdf(output_data: dict):
+def output_data_pdf(file_path: pathlib.Path, date: int = None, limit: int = None):
+    with open(file_path) as src_json:
+        output_data = json.load(src_json)
     offline_mode = define_the_mode()
+    iteration = 0
     pdf = FPDF()
     pdf.set_auto_page_break(False)
     pdf.add_page()
@@ -175,18 +188,16 @@ def output_data_pdf(output_data: dict):
     pdf.cell(0, 5, ln=1)
     indent = 20
     for key, item in enumerate(output_data["items"]):
-        if offline_mode:
-            indent = item_offline_mode(pdf, item, indent)
-        else:
-            indent = item_online_mode(pdf, item, key, indent)
-        if indent >= pdf.h:
-            indent -= pdf.h
+        if (date is not None and item["pubdate"] == date) or date is None:
+            iteration += 1
+            if offline_mode:
+                indent = item_offline_mode(pdf, item, indent)
+            else:
+                indent = item_online_mode(pdf, item, key, indent)
+            if indent >= pdf.h:
+                indent -= pdf.h
+            if iteration == limit:
+                break
     output_file_name = output_data["feed"].replace(" ", "_").lower()
     output_file_path = Path(Path.cwd(), "output_files", f"{output_file_name}.pdf")
     pdf.output(output_file_path)
-
-
-if __name__ == '__main__':
-    with open("result_data.json") as src_file:
-        src_dict = json.load(src_file)
-    output_data_pdf(src_dict)
