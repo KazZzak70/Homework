@@ -1,4 +1,4 @@
-from pdf_output import define_the_mode, get_image
+from pdf_output.pdf_output import define_the_mode, get_image
 import xml.etree.ElementTree as XML
 import xml.etree.ElementTree
 from PIL import Image

@@ -1,5 +1,5 @@
 import unittest
-import date_converter
+from rss_reader import date_converter
 
 
 class TestDateConverter(unittest.TestCase):

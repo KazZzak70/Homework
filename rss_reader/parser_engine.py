@@ -1,9 +1,9 @@
-from fb2_output import output_data_fb2
-from pdf_output import output_data_pdf
-from date_converter import configure_the_date
+from fb2_output.fb2_output import output_data_fb2
+from pdf_output.pdf_output import output_data_pdf
+from .date_converter import configure_the_date
 from bs4 import BeautifulSoup
-import exceptions
-import wrappers
+from . import exceptions
+from . import wrappers
 import requests
 import logging
 import pathlib

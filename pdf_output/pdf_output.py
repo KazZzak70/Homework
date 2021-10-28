@@ -182,7 +182,7 @@ def output_data_pdf(file_path: pathlib.Path, date: int = None, limit: int = None
     pdf = FPDF()
     pdf.set_auto_page_break(False)
     pdf.add_page()
-    pdf.add_font('DejaVu', '', 'DejaVuSansCondensed.ttf', uni=True)
+    pdf.add_font('DejaVu', '', 'pdf_output/DejaVuSansCondensed.ttf', uni=True)
     pdf.set_font('DejaVu', '', 14)
     pdf.cell(200, 5, txt=f"Feed: {output_data['feed']}", ln=1, align="L")
     pdf.cell(0, 5, ln=1)

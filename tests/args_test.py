@@ -1,4 +1,4 @@
-from args import configure_parser
+from rss_reader.args import configure_parser
 import unittest
 
 
