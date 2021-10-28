@@ -3,8 +3,9 @@ from parser_engine import Parser
 import args as _args
 import logging
 
-if __name__ == "__main__":
-    args = _args.configure_parser()
+
+def rss_reader():
+    args = _args.configure_parser().parse_args()
     if args.date is not None:
         check_user_date(args.date)
     if args.limit is not None and args.limit < 0:

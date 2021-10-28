@@ -12,6 +12,8 @@ import json
 import sys
 import re
 
+"""This module contains the parser core and the main data processing functions."""
+
 
 class Parser:
     """
@@ -123,6 +125,23 @@ class Parser:
 
     @staticmethod
     def sort_by_date(json_files_list: list, date: int, verbose_flag: bool, json_flag: bool, limit: int):
+        """
+        This function is called in the mode of sorting by date of all data files saved locally.
+
+        :param json_files_list: a list of json files found in output_data folder
+        :type json_files_list: list
+        :param date: date received from the user for sorting news
+        :type date: int
+        :param verbose_flag: flag about the need to display additional information during execution
+        :type verbose_flag: bool
+        :param json_flag: flag about the need to output data in JSON-format
+        :type json_flag: bool
+        :param limit: number of news in the output
+        :type limit: int
+
+        :raise FileNotFoundError: this error will appear if there is no data file
+                                  in the mode of sorting by date of a specific resource
+        """
         for file in json_files_list:
             file_path = pathlib.Path(Parser.OUTPUT_DATA_PATH, file)
             try:
@@ -136,18 +155,36 @@ class Parser:
                     logging.error(msg="Result data file error")
 
     def check_the_link_type(self):
+        """
+        This function checks the link type.
+        """
         if not self.soup.find("rss"):
             logging.error(msg="This is not RSS link")
             exit()
 
     @staticmethod
     def get_json_files_list():
+        """
+        This function returns a list of json files found in output_data folder
+
+        :return: a list of json files
+        :rtype: list
+        """
         json_files_list = [file.name for file in Parser.OUTPUT_DATA_PATH.iterdir() if
                            file.is_file() and file.name.endswith(".json")]
         return json_files_list
 
     @staticmethod
     def generate_result_file_name(url: str) -> str:
+        """
+        This function gets a link to a resource and generates an output file name in a uniform format.
+
+        :param url: URL to the RSS channel
+        :type url: str
+
+        :return: an output file name in a uniform format
+        :rtype: str
+        """
         begin_pattern = re.compile(r"https?://")
         match = begin_pattern.search(url)
         result_name = f'{url[match.end():].replace("/", "_").replace(".", "_")}.json'
@@ -244,7 +281,7 @@ class Parser:
             logging.info(msg=f'Saving result data file to {str(pathlib.Path(__file__).parent.resolve())}')
 
     @staticmethod
-    def data_output(*, src_data: dict, verbose_flag: bool, json_flag: bool, limit: int, date: int = None):
+    def data_output(*, src_data: dict, verbose_flag: bool, json_flag: bool, limit: int = None, date: int = None):
         """
         This method implements data output to stdout in the selected format.
 

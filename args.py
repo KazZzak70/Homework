@@ -1,7 +1,15 @@
 import argparse
 
+"""This module contains a function that configures the parser of input arguments from the terminal"""
+
 
 def configure_parser():
+    """This function configures the parser for input arguments
+    from the terminal and returns the parser object.
+
+    :return: parser with some arguments
+    :rtype: argparse.ArgumentParser
+    """
     parser = argparse.ArgumentParser(description="Pure Python command-line RSS reader.")
     parser.add_argument("source", help="RSS URL", type=str, const=None, nargs="?")
     parser.add_argument("--version", help="Print version info", action='version', version="Version 1.4")
@@ -11,4 +19,4 @@ def configure_parser():
     parser.add_argument("--date", help="Sort news for a given date", type=int)
     parser.add_argument("--to-pdf", help="Export result to .pdf file format", action="store_true")
     parser.add_argument("--to-fb2", help="Export result to .fb2 file format", action="store_true")
-    return parser.parse_args()
+    return parser

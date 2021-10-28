@@ -8,13 +8,13 @@ import unittest
 import json
 import io
 
-FOLDER_PATH = Path(Path.cwd(), "tests", "test_snippets")
+FOLDER_PATH = Path(Path.cwd(), "test_snippets")
 
 
 class TestParser(unittest.TestCase):
     FILE_SNIPPETS_NAMES_LIST = ["data_1_item.json", "data_1_json_mode", "data_1_normal_mode", "data_25_items.json",
                                 "data_25_json_mode"]
-    ITEM_NAMES_LIST = ["item_with_enclosure", "item_with_media_content", "two_items", "two_items_limit_1.json"]
+    ITEM_NAMES_LIST = ["item_with_enclosure", "item_with_media_content", "one_item", "one_item.json"]
     FILE_SNIPPETS_PATH_LIST = [Path(FOLDER_PATH, file_name) for file_name in FILE_SNIPPETS_NAMES_LIST]
     ITEMS_PATH_LIST = [Path(FOLDER_PATH, item_name) for item_name in ITEM_NAMES_LIST]
 
@@ -134,20 +134,11 @@ class TestParser(unittest.TestCase):
         first_item = self.test_instance.__next__()
         self.assertEqual(first_item, expected_first_item)
 
-    def test_obj_generator_case_middle_item(self):
-        with open(TestParser.ITEMS_PATH_LIST[2]) as src_file:
-            src = src_file.read()
-        self.test_instance.soup = BeautifulSoup(src, "xml")
-        self.test_instance.item = self.test_instance.soup.find("item")
-        expected_item = self.test_instance.soup.find_all("item")[1]
-        item = self.test_instance.__next__()
-        self.assertEqual(item, expected_item)
-
     def test_obj_generator_case_last_item(self):
         with open(TestParser.ITEMS_PATH_LIST[2]) as src_file:
             src = src_file.read()
         self.test_instance.soup = BeautifulSoup(src, "xml")
-        self.test_instance.item = self.test_instance.soup.find_all("item")[1]
+        self.test_instance.item = self.test_instance.soup.find("item")
         with self.assertRaises(StopIteration):
             self.test_instance.__next__()
 
@@ -172,8 +163,20 @@ class TestParser(unittest.TestCase):
             src = src_file.read()
         self.test_instance.soup = BeautifulSoup(src, "xml")
         with self.assertLogs(level="DEBUG") as cm:
-            self.test_instance.get_content(html=src, verbose_flag=True, limit=0)
+            self.test_instance.get_content(html=src, verbose_flag=True)
         self.assertEqual(cm.output, ["INFO:root:Starting collecting items"])
+
+    def test_generate_result_file_name(self):
+        url = "http://lenta.ru/rss/articles"
+        expected_result = "lenta_ru_rss_articles.json"
+        received_result = Parser.generate_result_file_name(url=url)
+        self.assertEqual(expected_result, received_result)
+
+    def test_check_the_link_type(self):
+        self.test_instance.soup = BeautifulSoup("one-two-stop", "xml")
+        with self.assertLogs(level="ERROR") as cm:
+            self.assertRaises(SystemExit, lambda: Parser.check_the_link_type(self=self.test_instance))
+        self.assertEqual(cm.output, ["ERROR:root:This is not RSS link"])
 
 
 if __name__ == '__main__':

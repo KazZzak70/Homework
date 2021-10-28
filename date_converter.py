@@ -1,8 +1,19 @@
 import logging
 import re
 
+"""This module contains a function for converting a date and a function for checking the date entered by the user"""
+
 
 def configure_the_date(date: str) -> int:
+    """
+    This function implements the conversion of dates from different formats to a single one.
+
+    :param date: date in one of the formats: RFC822 or yahoo-format
+    :type date: str
+
+    :return: date in format: YYYYMMDD
+    :rtype: int
+    """
     result = str()
     months_dict = {"Jan": "01", "Feb": "02", "Mar": "03", "Apr": "04", "May": "05", "Jun": "06",
                    "Jul": "07", "Aug": "08", "Sep": "09", "Oct": "10", "Nov": "11", "Dec": "12"}
@@ -18,6 +29,12 @@ def configure_the_date(date: str) -> int:
 
 
 def check_user_date(date: int):
+    """
+    This function checks the date entered by the user for possible errors.
+
+    :param date: date in format: YYYYMMDD
+    :type date: int
+    """
     month_30_day_max = ["04", "06", "09", "11"]
     exception_flag = False
     if date < 0 or len(str(date)) != 8:
