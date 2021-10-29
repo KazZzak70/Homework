@@ -1,0 +1,6 @@
+include README
+include requirements.txt
+include pdf_output/DejaVuSansCondensed.ttf
+recursive-include output_data/ *
+recursive-include output_files/ *
+recursive-include tests/test_snippets/ *
