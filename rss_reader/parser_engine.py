@@ -22,7 +22,7 @@ class Parser:
 
     HEADERS = {'user-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:93.0) Gecko/20100101 Firefox/93.0',
                'accept': '*/*'}
-    OUTPUT_DATA_PATH = pathlib.Path(pathlib.Path.cwd(), "output_data")
+    OUTPUT_DATA_PATH = pathlib.Path(pathlib.Path.home(), "output_data")
     url_pattern = re.compile(r"https?://[a-zA-Z0-9_\-/~\.:]+")
 
     def __init__(self):
@@ -58,6 +58,11 @@ class Parser:
         else:
             return self.item
 
+    @staticmethod
+    def create_folders():
+        if not pathlib.Path(Parser.OUTPUT_DATA_PATH).exists():
+            Parser.OUTPUT_DATA_PATH.mkdir()
+
     @wrappers.execution_time
     def __call__(self, *, url: str, stdout_json: bool, stdout_verbose: bool, limit: int, date: int, pdf: bool,
                  fb2: bool):
@@ -77,6 +82,7 @@ class Parser:
 
         :rtype: object
         """
+        Parser.create_folders()
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG if stdout_verbose else logging.ERROR)
         if url is None and date is None:
             logging.error(msg="So, what should I do?")
@@ -109,8 +115,11 @@ class Parser:
                 result_file_name = Parser.generate_result_file_name(url=url)
                 result_file_path = pathlib.Path(Parser.OUTPUT_DATA_PATH, result_file_name)
                 src_data = Parser.get_content(self, html=html.text, verbose_flag=stdout_verbose)
-                with open(result_file_path, 'w') as export_file:
-                    Parser.export_content(file=export_file, src_data=src_data, verbose_flag=stdout_verbose)
+                try:
+                    with open(result_file_path, 'w') as export_file:
+                        Parser.export_content(file=export_file, src_data=src_data, verbose_flag=stdout_verbose)
+                except FileNotFoundError:
+                    pass
                 try:
                     with open(result_file_path) as src_file:
                         src = json.load(src_file)

@@ -1,14 +1,23 @@
-import pathlib
+from importlib.resources import read_binary
 from pathlib import Path
 from fpdf import FPDF
 from PIL import Image
 import requests
+import pathlib
 import json
 import os
 
 HEADERS = {'user-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:93.0) Gecko/20100101 Firefox/93.0',
            'accept': '*/*'}
 total_page_height = FPDF().h - 20
+
+
+def create_folder():
+    output_data_path = pathlib.Path(pathlib.Path.home(), "output_files")
+    fonts_path = pathlib.Path(pathlib.Path.home(), "output_files", "fonts")
+    if not output_data_path.exists():
+        output_data_path.mkdir()
+        fonts_path.mkdir()
 
 
 def define_the_mode():
@@ -175,6 +184,7 @@ def item_offline_mode(pdf, item: dict, indent: int) -> float:
 
 
 def output_data_pdf(file_path: pathlib.Path, date: int = None, limit: int = None):
+    create_folder()
     with open(file_path) as src_json:
         output_data = json.load(src_json)
     offline_mode = define_the_mode()
@@ -182,7 +192,11 @@ def output_data_pdf(file_path: pathlib.Path, date: int = None, limit: int = None
     pdf = FPDF()
     pdf.set_auto_page_break(False)
     pdf.add_page()
-    pdf.add_font('DejaVu', '', 'pdf_output/DejaVuSansCondensed.ttf', uni=True)
+    font = read_binary(package="pdf_output.fonts", resource="DejaVuSansCondensed.ttf")
+    new_font_path = pathlib.Path(pathlib.Path.home(), "output_files", "fonts", "DejaVuSansCondensed.ttf")
+    with open(new_font_path, "wb") as new_font:
+        new_font.write(font)
+    pdf.add_font('DejaVu', '', fname=new_font_path, uni=True)
     pdf.set_font('DejaVu', '', 14)
     pdf.cell(200, 5, txt=f"Feed: {output_data['feed']}", ln=1, align="L")
     pdf.cell(0, 5, ln=1)
@@ -199,5 +213,5 @@ def output_data_pdf(file_path: pathlib.Path, date: int = None, limit: int = None
             if iteration == limit:
                 break
     output_file_name = output_data["feed"].replace(" ", "_").lower()
-    output_file_path = Path(Path.cwd(), "output_files", f"{output_file_name}.pdf")
+    output_file_path = Path(Path.home(), "output_files", f"{output_file_name}.pdf")
     pdf.output(output_file_path)

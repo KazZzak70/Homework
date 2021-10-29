@@ -8,6 +8,12 @@ import json
 import os
 
 
+def create_folder():
+    output_data_path = pathlib.Path(pathlib.Path.home(), "output_files")
+    if not output_data_path.exists():
+        output_data_path.mkdir()
+
+
 def insert_picture(*, key: int, image_url: str, section: xml.etree.ElementTree.Element, root: xml.etree.ElementTree.Element):
     image = get_image(image_url)
     with open(f"image{key}.jpg", "wb") as file:
@@ -66,6 +72,7 @@ def online_mode(*, section: xml.etree.ElementTree.Element, root: xml.etree.Eleme
 
 
 def output_data_fb2(file_path: pathlib.Path, date: int = None, limit: int = None):
+    create_folder()
     with open(file_path) as src_file:
         src = json.load(src_file)
     offline_mode_flag = define_the_mode()
