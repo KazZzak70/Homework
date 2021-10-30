@@ -88,49 +88,93 @@ class Parser:
             logging.error(msg="So, what should I do?")
             exit()
         if url is None and date is not None:
-            json_files_list = Parser.get_json_files_list()
-            Parser.sort_by_date(json_files_list=json_files_list, date=date, verbose_flag=stdout_verbose,
-                                json_flag=stdout_json, limit=limit)
-            if pdf:
-                for json_file in json_files_list:
-                    file_path = pathlib.Path(Parser.OUTPUT_DATA_PATH, json_file)
-                    output_data_pdf(file_path, date, limit)
-            if fb2:
-                for json_file in json_files_list:
-                    file_path = pathlib.Path(Parser.OUTPUT_DATA_PATH, json_file)
-                    output_data_fb2(file_path, date, limit)
+            Parser.case_sort_all(date=date, verbose_flag=stdout_verbose, json_flag=stdout_json, limit=limit, pdf=pdf,
+                                 fb2=fb2)
         if url is not None and date is not None:
-            file_name = Parser.generate_result_file_name(url)
-            Parser.sort_by_date(json_files_list=[file_name], date=date, verbose_flag=stdout_verbose,
-                                json_flag=stdout_json, limit=limit)
-            file_path = pathlib.Path(Parser.OUTPUT_DATA_PATH, file_name)
-            if pdf:
-                output_data_pdf(file_path, date, limit)
-            if fb2:
-                output_data_fb2(file_path, date, limit)
+            Parser.case_sort_url(url=url, date=date, verbose_flag=stdout_verbose, json_flag=stdout_json, limit=limit,
+                                 pdf=pdf, fb2=fb2)
         if url is not None and date is None:
-            html = Parser.get_html(url=url, verbose_flag=stdout_verbose)
-            html = html if html is not None else exit()
-            if html.status_code == 200:
-                result_file_name = Parser.generate_result_file_name(url=url)
-                result_file_path = pathlib.Path(Parser.OUTPUT_DATA_PATH, result_file_name)
-                src_data = Parser.get_content(self, html=html.text, verbose_flag=stdout_verbose)
-                try:
-                    with open(result_file_path, 'w') as export_file:
-                        Parser.export_content(file=export_file, src_data=src_data, verbose_flag=stdout_verbose)
-                except FileNotFoundError:
-                    pass
-                try:
-                    with open(result_file_path) as src_file:
-                        src = json.load(src_file)
-                    Parser.data_output(src_data=src, verbose_flag=stdout_verbose, json_flag=stdout_json, limit=limit)
-                except exceptions.ResultDataFileError as _ex:
-                    logging.error(msg="Result data file error")
-                    exit()
-                if pdf:
-                    output_data_pdf(result_file_path, limit=limit)
-                if fb2:
-                    output_data_fb2(result_file_path, limit=limit)
+            self.parse(url=url, verbose_flag=stdout_verbose, json_flag=stdout_json, limit=limit, pdf=pdf, fb2=fb2)
+
+    def parse(self, url: str, verbose_flag: bool, json_flag: bool, limit: int, pdf: bool, fb2: bool):
+        """
+        This function is called when the user specifies the source, but does not specify the date for sorting news.
+
+        :param url: URL to the RSS channel
+        :param verbose_flag: flag about the need to display additional information during execution
+        :param json_flag: flag about the need to output data in JSON-format
+        :param limit: number of news in the output
+        :param pdf: flag about the need to output data in PDF-format file
+        :param fb2: flag about the need to output data in FB2-format file
+        """
+        html = Parser.get_html(url=url, verbose_flag=verbose_flag)
+        html = html if html is not None else exit()
+        if html.status_code == 200:
+            result_file_name = Parser.generate_result_file_name(url=url)
+            result_file_path = pathlib.Path(Parser.OUTPUT_DATA_PATH, result_file_name)
+            src_data = Parser.get_content(self, html=html.text, verbose_flag=verbose_flag)
+            try:
+                with open(result_file_path, 'w') as export_file:
+                    Parser.export_content(file=export_file, src_data=src_data, verbose_flag=verbose_flag)
+            except FileNotFoundError:
+                pass
+            try:
+                with open(result_file_path) as src_file:
+                    src = json.load(src_file)
+                Parser.data_output(src_data=src, verbose_flag=verbose_flag, json_flag=json_flag, limit=limit)
+            except exceptions.ResultDataFileError as _ex:
+                logging.error(msg="Result data file error")
+                exit()
+            if pdf:
+                output_data_pdf(result_file_path, limit=limit)
+            if fb2:
+                output_data_fb2(result_file_path, limit=limit)
+
+    @staticmethod
+    def case_sort_url(*, url: str, date: int, verbose_flag: bool, json_flag: bool, limit: int, pdf: bool, fb2: bool):
+        """
+        This function is called when the user specifies both the source and the date for sorting news.
+
+        :param url: URL to the RSS channel
+        :param date: date received from the user for sorting news
+        :param verbose_flag: flag about the need to display additional information during execution
+        :param json_flag: flag about the need to output data in JSON-format
+        :param limit: number of news in the output
+        :param pdf: flag about the need to output data in PDF-format file
+        :param fb2: flag about the need to output data in FB2-format file
+        """
+        file_name = Parser.generate_result_file_name(url)
+        Parser.sort_by_date(json_files_list=[file_name], date=date, verbose_flag=verbose_flag,
+                            json_flag=json_flag, limit=limit)
+        file_path = pathlib.Path(Parser.OUTPUT_DATA_PATH, file_name)
+        if pdf:
+            output_data_pdf(file_path, date, limit)
+        if fb2:
+            output_data_fb2(file_path, date, limit)
+
+    @staticmethod
+    def case_sort_all(*, date: int, verbose_flag: bool, json_flag: bool, limit: int, pdf: bool, fb2: bool):
+        """
+        This function is called when the user does not specify the source, but sets the date for sorting news.
+
+        :param date: date received from the user for sorting news
+        :param verbose_flag: flag about the need to display additional information during execution
+        :param json_flag: flag about the need to output data in JSON-format
+        :param limit: number of news in the output
+        :param pdf: flag about the need to output data in PDF-format file
+        :param fb2: flag about the need to output data in FB2-format file
+        """
+        json_files_list = Parser.get_json_files_list()
+        Parser.sort_by_date(json_files_list=json_files_list, date=date, verbose_flag=verbose_flag,
+                            json_flag=json_flag, limit=limit)
+        if pdf:
+            for json_file in json_files_list:
+                file_path = pathlib.Path(Parser.OUTPUT_DATA_PATH, json_file)
+                output_data_pdf(file_path, date, limit)
+        if fb2:
+            for json_file in json_files_list:
+                file_path = pathlib.Path(Parser.OUTPUT_DATA_PATH, json_file)
+                output_data_fb2(file_path, date, limit)
 
     @staticmethod
     def sort_by_date(json_files_list: list, date: int, verbose_flag: bool, json_flag: bool, limit: int):
@@ -350,10 +394,3 @@ class Parser:
             print(f"There are no news for the chosen date")
         if verbose_flag:
             print(f"Total amount of collected items in local memory is {len(src_data['items'])}")
-
-
-if __name__ == "__main__":
-    lenta_url = "http://lenta.ru/rss/articles"
-    yahoo_url = "https://news.yahoo.com/rss/"
-    aif_url = "https://aif.ru/rss/politics.php"
-    test_url = "http://httpbin.org/delay/10"

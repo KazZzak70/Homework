@@ -1,10 +1,11 @@
+import requests
 
 
 class ResultDataFileError(FileNotFoundError):
     pass
 
 
-class UrlError(Exception):
+class UrlError(requests.RequestException):
     pass
 
 
